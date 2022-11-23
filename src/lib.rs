@@ -1,5 +1,6 @@
 use teloxide::{prelude::RequesterExt, types::ParseMode, Bot};
 
+pub mod migrations;
 pub mod models;
 pub mod schema;
 pub mod storage;

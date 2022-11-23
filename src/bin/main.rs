@@ -1,10 +1,7 @@
-use bereal::{models::Post, storage::establish_connection, util};
+use bereal::{migrations, models::Post, storage::establish_connection, util};
 use diesel::prelude::*;
 use dotenvy::dotenv;
 
-// TODO:
-// 1. schema for bot message handling
-// 2. diesel database setup
 #[tokio::main]
 async fn main() {
     dotenv().ok();
@@ -12,8 +9,10 @@ async fn main() {
     util::setup_tracing();
     tracing::info!("BeReal is starting");
 
-    use bereal::schema::posts::dsl::*;
     let connection = &mut establish_connection();
+    migrations::run(connection).unwrap();
+
+    use bereal::schema::posts::dsl::*;
     let results = posts
         .filter(published.eq(true))
         .limit(5)
