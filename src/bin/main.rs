@@ -4,6 +4,10 @@ use dotenvy::dotenv;
 
 #[tokio::main]
 async fn main() {
+    run().await
+}
+
+async fn run() {
     dotenv().ok();
 
     util::setup_tracing();
@@ -17,7 +21,7 @@ async fn main() {
         .filter(published.eq(true))
         .limit(5)
         .load::<Post>(connection)
-        .expect("Error loading posts");
+        .expect("error loading posts");
 
     println!("Displaying {} posts", results.len());
     for post in results {
@@ -26,10 +30,11 @@ async fn main() {
         println!("{}", post.body);
     }
 
+    // Storage is repository wrapping diesel connection
     // let storage = bereal::storage().await;
 
-    // let bot = bereal::bot();
-    // let schema = bereal::schema();
+    let schema = bereal::bot::schema::root();
+    let bot = bereal::bot::bot_from_env();
 
-    // bereal::dispatch(schema, bot, storage).await;
+    bereal::dispatch(bot, schema).await;
 }
