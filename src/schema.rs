@@ -5,6 +5,8 @@ diesel::table! {
         id -> Int4,
         title -> Varchar,
         body -> Text,
-        published -> Bool,
+        draft -> Bool,
+        published_at -> Timestamp,
+        visit_count -> Int4,
     }
 }

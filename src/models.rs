@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use diesel::prelude::*;
 
 use crate::schema::posts;
@@ -7,7 +9,9 @@ pub struct Post {
     pub id: i32,
     pub title: String,
     pub body: String,
-    pub published: bool,
+    pub draft: bool,
+    pub published_at: SystemTime,
+    pub visit_count: i32,
 }
 
 #[derive(Insertable)]

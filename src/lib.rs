@@ -1,10 +1,7 @@
 use std::error::Error;
 
 use bot::MyBot;
-use diesel::prelude::*;
 use teloxide::prelude::*;
-
-use self::models::{NewPost, Post};
 
 pub mod bot;
 pub mod migrations;
@@ -22,17 +19,6 @@ type MyHandler = dptree::Handler<
     HandlerResult,
     teloxide::dispatching::DpHandlerDescription,
 >;
-
-pub fn create_post(conn: &mut PgConnection, title: &str, body: &str) -> Post {
-    use crate::schema::posts;
-
-    let new_post = NewPost { title, body };
-
-    diesel::insert_into(posts::table)
-        .values(&new_post)
-        .get_result(conn)
-        .expect("error saving new post")
-}
 
 pub async fn dispatch(bot: MyBot, schema: MyHandler) {
     Dispatcher::builder(bot, schema)
