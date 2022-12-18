@@ -6,10 +6,7 @@ pub trait WithId {
 
     fn id() -> Self::Id;
 
-    fn with_id(&self) -> (&Self, diesel::dsl::Eq<Self::Id, Uuid>)
-    where
-        Self: Sized,
-    {
+    fn with_id(&self) -> (&Self, diesel::dsl::Eq<Self::Id, Uuid>) {
         (self, id_for(Self::id()))
     }
 }
