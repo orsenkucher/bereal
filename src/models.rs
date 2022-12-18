@@ -8,10 +8,9 @@ use crate::with_id::WithId;
 
 #[derive(Identifiable, Queryable, AsChangeset, Clone, Debug)]
 pub struct User {
-    id: Uuid,
+    pub id: Uuid,
     pub telegram_id: String,
-    // name: Option<String>,
-    pub name: String,
+    pub name: Option<String>,
     pub joined_at: NaiveDateTime,
 }
 
