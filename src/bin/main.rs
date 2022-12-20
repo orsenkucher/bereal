@@ -15,11 +15,13 @@ async fn run() {
     let connection = &mut establish_connection();
     migrations::run(connection).unwrap();
 
+    bereal::api::run().await;
+
     // Storage is repository wrapping diesel connection
     // let storage = bereal::storage().await;
 
-    let schema = bereal::bot::schema::root();
-    let bot = bereal::bot::bot_from_env();
+    // let schema = bereal::bot::schema::root();
+    // let bot = bereal::bot::bot_from_env();
 
-    bereal::dispatch(bot, schema).await;
+    // bereal::dispatch(bot, schema).await;
 }

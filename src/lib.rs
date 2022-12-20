@@ -3,6 +3,7 @@ use std::error::Error;
 use bot::MyBot;
 use teloxide::prelude::*;
 
+pub mod api;
 pub mod bot;
 pub mod migrations;
 pub mod models;
