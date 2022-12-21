@@ -1,5 +1,8 @@
+use std::fmt::Display;
+
 use juniper::{
     graphql_object, EmptySubscription, FieldResult, GraphQLEnum, GraphQLInputObject, GraphQLObject,
+    ScalarValue,
 };
 use warp::{http::Response, Filter};
 
@@ -80,28 +83,29 @@ struct Mutation;
     // If we need to use `ScalarValue` parametrization explicitly somewhere
     // in the object definition (like here in `FieldResult`), we could
     // declare an explicit type parameter for that, and specify it.
-    // scalar = S: ScalarValue + Display,
+    scalar = S: ScalarValue + Display,
 )]
 impl Mutation {
-    fn createHuman<S: ScalarValue + Display>(
-        context: &Context,
-        new_human: NewHuman,
-    ) -> FieldResult<Human> {
-        todo!()
-    }
     // fn createHuman<S: ScalarValue + Display>(
     //     context: &Context,
     //     new_human: NewHuman,
-    // ) -> FieldResult<Human, S> {
-    //     let db = context
-    //         .pool
-    //         .get_connection()
-    //         .map_err(|e| e.map_scalar_value())?;
-    //     let human: Human = db
-    //         .insert_human(&new_human)
-    //         .map_err(|e| e.map_scalar_value())?;
-    //     Ok(human)
+    // ) -> FieldResult<Human> {
+    //     todo!()
     // }
+    fn createHuman<S: ScalarValue + Display>(
+        context: &Context,
+        new_human: NewHuman,
+    ) -> FieldResult<Human, S> {
+        todo!()
+        // let db = context
+        //     .pool
+        //     .get_connection()
+        //     .map_err(|e| e.map_scalar_value())?;
+        // let human: Human = db
+        //     .insert_human(&new_human)
+        //     .map_err(|e| e.map_scalar_value())?;
+        // Ok(human)
+    }
 }
 
 // A root schema consists of a query, a mutation, and a subscription.
