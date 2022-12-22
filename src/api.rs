@@ -4,33 +4,69 @@ use juniper::{
     graphql_object, EmptySubscription, FieldResult, GraphQLEnum, GraphQLInputObject, GraphQLObject,
     ScalarValue,
 };
+use uuid::Uuid;
 use warp::{http::Response, Filter};
 
-use crate::storage::{self, Service};
+use crate::{
+    models,
+    storage::{self, Service},
+};
 
-#[derive(GraphQLEnum)]
-enum Episode {
-    NewHope,
-    Empire,
-    Jedi,
-}
+// #[derive(GraphQLEnum)]
+// enum Episode {
+//     NewHope,
+//     Empire,
+//     Jedi,
+// }
 
 #[derive(GraphQLObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
-struct Human {
+struct User {
     id: String,
-    name: String,
-    appears_in: Vec<Episode>,
-    home_planet: String,
+    telegram_id: String,
+    name: Option<String>,
+    friends: Vec<User>,
+}
+
+struct Users(Vec<User>);
+
+impl From<(models::User, Vec<models::User>)> for User {
+    fn from((u, f): (models::User, Vec<models::User>)) -> Self {
+        let f: Users = f.into();
+        Self {
+            id: u.id.to_string(),
+            telegram_id: u.telegram_id,
+            name: u.name,
+            friends: f.0,
+        }
+    }
+}
+
+impl From<Vec<models::User>> for Users {
+    fn from(from: Vec<models::User>) -> Self {
+        Self(
+            from.into_iter()
+                .map(|u| (u, vec![]))
+                .map(Into::into)
+                .collect(),
+        )
+    }
 }
 
 // There is also a custom derive for mapping GraphQL input objects.
 #[derive(GraphQLInputObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
-struct NewHuman {
+struct NewUser {
     name: String,
-    appears_in: Vec<Episode>,
-    home_planet: String,
+    telegram_id: String,
+    // appears_in: Vec<Episode>,
+    // home_planet: String,
+}
+
+#[derive(GraphQLInputObject)]
+struct AddFriend {
+    user_id: String,
+    friend_id: String,
 }
 
 struct Context {
@@ -55,7 +91,7 @@ struct Query;
     context = Context,
 )]
 impl Query {
-    fn apiVersion() -> &'static str {
+    fn api_version() -> &'static str {
         "1.0"
     }
 
@@ -63,15 +99,42 @@ impl Query {
     // To gain access to the context, we specify a argument
     // that is a reference to the Context type.
     // Juniper automatically injects the correct context here.
-    fn human(context: &Context, id: String) -> FieldResult<Human> {
-        todo!()
-        // // Get a db connection.
-        // let connection = context.pool.get_connection()?;
-        // // Execute a db query.
-        // // Note the use of `?` to propagate errors.
+    // fn user(context: &Context, id: String) -> FieldResult<User> {
+    //     // todo!()
+    //     // Get a db connection.
+    //     let connection = context.service.get_connection()?;
+    //     // Execute a db query.
+    //     // Note the use of `?` to propagate errors.
+    //     let human = connection.find_human(&id)?;
+    //     // Return the result.
+    //     Ok(human)
+    // }
+
+    fn users(context: &Context) -> FieldResult<Vec<User>> {
+        let db = &context.storage;
+        let users = db.users()?;
+        let users = db.with_friends(users)?;
+        let graph = users.into_iter().map(Into::into).collect();
+        Ok(graph)
+
+        // let mut result = vec![];
+        // for (u, f) in users{
+        //     result.push(User{
+        //          id:u.id,
+        //         telegram_id:u.telegram_id,
+        //          name:u.name,
+
+        //     })
+        // }
+
+        // todo!()
+        // let friends =
+
+        // Ok(users)
+        // Execute a db query.
+        // Note the use of `?` to propagate errors.
         // let human = connection.find_human(&id)?;
-        // // Return the result.
-        // Ok(human)
+        // Return the result.
     }
 }
 
@@ -86,25 +149,25 @@ struct Mutation;
     scalar = S: ScalarValue + Display,
 )]
 impl Mutation {
-    // fn createHuman<S: ScalarValue + Display>(
-    //     context: &Context,
-    //     new_human: NewHuman,
-    // ) -> FieldResult<Human> {
-    //     todo!()
-    // }
-    fn createHuman<S: ScalarValue + Display>(
+    fn create_user<S: ScalarValue + Display>(
         context: &Context,
-        new_human: NewHuman,
-    ) -> FieldResult<Human, S> {
-        todo!()
-        // let db = context
-        //     .pool
-        //     .get_connection()
-        //     .map_err(|e| e.map_scalar_value())?;
-        // let human: Human = db
-        //     .insert_human(&new_human)
-        //     .map_err(|e| e.map_scalar_value())?;
-        // Ok(human)
+        new_user: NewUser,
+    ) -> FieldResult<User, S> {
+        let db = &context.storage;
+        let NewUser { name, telegram_id } = new_user;
+        let user = db.create_user(models::NewUser::joined_now(&name, &telegram_id))?;
+        Ok((user, vec![]).into())
+    }
+
+    fn add_friend(context: &Context, new_friend: AddFriend) -> FieldResult<User> {
+        let db = &context.storage;
+        let AddFriend { user_id, friend_id } = new_friend;
+        let result = db.create_friend(models::NewFriend {
+            user_id: Uuid::parse_str(&user_id)?,
+            friend_id: Uuid::parse_str(&friend_id)?,
+        })?;
+        let user = db.user_by_id(result.user_id)?;
+        Ok((user, vec![]).into())
     }
 }
 
@@ -123,11 +186,11 @@ pub async fn run() {
         Response::builder()
             .header("content-type", "text/html")
             .body(format!(
-                "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
+                "<html><h1>BeReal API</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
             ))
     });
 
-    tracing::info!("Listening on 127.0.0.1:8080");
+    tracing::info!("listening on 127.0.0.1:8080");
 
     let state = warp::any().map(move || Context::new(storage::Service::from_env()));
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());

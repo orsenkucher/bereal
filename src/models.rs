@@ -22,6 +22,17 @@ pub struct NewUser<'a> {
     pub joined_at: NaiveDateTime,
 }
 
+impl<'a> NewUser<'a> {
+    pub fn joined_now(name: &'a str, telegram_id: &'a str) -> Self {
+        let now = chrono::Utc::now();
+        Self {
+            telegram_id,
+            name,
+            joined_at: now.naive_utc(),
+        }
+    }
+}
+
 impl WithId for NewUser<'_> {
     type Id = users::id;
 
