@@ -51,6 +51,7 @@ impl Service {
     }
 
     pub fn create_friend(&self, new_friend: NewFriend) -> Result<Friend> {
+        create_friend(new_friend.inverse(), self.conn()?.deref_mut())?;
         create_friend(new_friend, self.conn()?.deref_mut())
     }
 
@@ -122,10 +123,10 @@ fn get_friends_for_user(user: &User, conn: &mut Connection) -> Result<Vec<User>>
         .with_context(|| format!("failed to get friends for user: {user:?}"))
 }
 
-fn get_user_by_id(id: Uuid, conn: &mut Connection) -> Result<User> {
+fn get_user_by_id(uid: Uuid, conn: &mut Connection) -> Result<User> {
     use crate::schema::users::dsl::*;
     users
-        .find(id)
+        .find(uid)
         .first(conn)
         .with_context(|| format!("failed to get user by id: {id:?}"))
 }

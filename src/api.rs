@@ -8,7 +8,7 @@ use uuid::Uuid;
 use warp::{http::Response, Filter};
 
 use crate::{
-    models,
+    models::{self, User},
     storage::{self, Service},
 };
 
@@ -19,39 +19,65 @@ use crate::{
 //     Jedi,
 // }
 
-#[derive(GraphQLObject)]
-#[graphql(description = "A humanoid creature in the Star Wars universe")]
-struct User {
-    id: String,
-    telegram_id: String,
-    name: Option<String>,
-    friends: Vec<User>,
-}
+// #[derive(GraphQLObject)]
+// #[graphql(description = "A humanoid creature in the Star Wars universe")]
+// struct User {
+//     id: String,
+//     telegram_id: String,
+//     name: Option<String>,
+//     // friends: Vec<User>,
+// }
 
-struct Users(Vec<User>);
+// #[graphql_object(description = "Bereal application user")]
+// impl User {
+//     // fn id(&self)->
+//     fn friends(&self, context: &Context) -> Vec<User> {
+//         let db = &context.storage;
+//         let friends = db.friends_for_user(&self).unwrap();
+//         friends
+//     }
+// }
 
-impl From<(models::User, Vec<models::User>)> for User {
-    fn from((u, f): (models::User, Vec<models::User>)) -> Self {
-        let f: Users = f.into();
-        Self {
-            id: u.id.to_string(),
-            telegram_id: u.telegram_id,
-            name: u.name,
-            friends: f.0,
-        }
-    }
-}
+// impl User {
+//     // normal impl block
+// }
 
-impl From<Vec<models::User>> for Users {
-    fn from(from: Vec<models::User>) -> Self {
-        Self(
-            from.into_iter()
-                .map(|u| (u, vec![]))
-                .map(Into::into)
-                .collect(),
-        )
-    }
-}
+// struct Users(Vec<User>);
+
+// TODO: For now, next try merge models
+// impl From<models::User> for User {
+//     fn from(from: models::User) -> Self {
+//         Self {
+//             id: from.id.to_string(),
+//             telegram_id: from.telegram_id,
+//             name: from.name,
+//         }
+//     }
+// }
+// impl From<(models::User, Vec<models::User>)> for User {
+//     fn from((u, f): (models::User, Vec<models::User>)) -> Self {
+//         // let f: Users = f.into();
+//         let friends = f.into_iter().map(Into::into).collect();
+//         Self {
+//             id: u.id.to_string(),
+//             telegram_id: u.telegram_id,
+//             name: u.name,
+//             // friends: f.0,
+//             friends,
+//         }
+//     }
+// }
+
+// impl From<Vec<models::User>> for Users {
+//     fn from(from: Vec<models::User>) -> Self {
+//         Self(
+//             from.into_iter()
+//                 .map(|u| (u, vec![]))
+//                 .map(Into::into)
+//                 .collect(),
+//         )
+//     }
+// }
 
 // There is also a custom derive for mapping GraphQL input objects.
 #[derive(GraphQLInputObject)]
@@ -69,7 +95,7 @@ struct AddFriend {
     friend_id: String,
 }
 
-struct Context {
+pub struct Context {
     // Use your real database pool here.
     storage: Service,
 }
@@ -77,6 +103,10 @@ struct Context {
 impl Context {
     fn new(storage: Service) -> Self {
         Self { storage }
+    }
+
+    pub fn storage(&self) -> &Service {
+        &self.storage
     }
 }
 
@@ -113,9 +143,10 @@ impl Query {
     fn users(context: &Context) -> FieldResult<Vec<User>> {
         let db = &context.storage;
         let users = db.users()?;
-        let users = db.with_friends(users)?;
-        let graph = users.into_iter().map(Into::into).collect();
-        Ok(graph)
+        // let users = db.with_friends(users)?;
+        // let graph = users.into_iter().map(Into::into).collect();
+        // Ok(graph)
+        Ok(users.into_iter().map(Into::into).collect())
 
         // let mut result = vec![];
         // for (u, f) in users{
@@ -156,7 +187,8 @@ impl Mutation {
         let db = &context.storage;
         let NewUser { name, telegram_id } = new_user;
         let user = db.create_user(models::NewUser::joined_now(&name, &telegram_id))?;
-        Ok((user, vec![]).into())
+        // Ok((user, vec![]).into())
+        Ok(user)
     }
 
     fn add_friend(context: &Context, new_friend: AddFriend) -> FieldResult<User> {
@@ -167,7 +199,8 @@ impl Mutation {
             friend_id: Uuid::parse_str(&friend_id)?,
         })?;
         let user = db.user_by_id(result.user_id)?;
-        Ok((user, vec![]).into())
+        // Ok((user, vec![]).into())
+        Ok(user)
     }
 }
 
