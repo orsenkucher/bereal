@@ -10,7 +10,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.21", features = ["rt-multi-thread", "macros"] }
 # juniper = "0.15.10"
 # juniper_warp = "0.7.0"
-juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master" }
+juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = [
+  "uuid",
+  "chrono",
+] }
 juniper_warp = { git = "https://github.com/graphql-rust/juniper", branch = "master" }
 warp = "0.3.3"
 dotenvy = "0.15"

@@ -18,17 +18,21 @@ pub struct User {
 
 #[graphql_object(description = "Bereal application user")]
 impl User {
-    fn id(&self) -> String {
-        self.id.to_string()
+    fn id(&self) -> &Uuid {
+        &self.id
     }
 
     fn telegram_id(&self) -> &str {
         &self.telegram_id
     }
 
-    // fn joined_at(&self) -> &NaiveDateTime {
-    //     &self.joined_at.
-    // }
+    fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    fn joined_at(&self) -> &NaiveDateTime {
+        &self.joined_at
+    }
 
     fn friends(&self, context: &Context) -> FieldResult<Vec<User>> {
         let db = context.storage();
