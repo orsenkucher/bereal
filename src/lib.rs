@@ -1,8 +1,5 @@
 use std::error::Error;
 
-use bot::MyBot;
-use teloxide::prelude::*;
-
 pub mod api;
 pub mod bot;
 pub mod migrations;
@@ -12,29 +9,7 @@ pub mod storage;
 pub mod util;
 mod with_id;
 
-type BoxError = Box<dyn Error + Send + Sync + 'static>;
-type HandlerResult = Result<(), BoxError>;
-
-type MyHandler = dptree::Handler<
-    'static,
-    DependencyMap,
-    HandlerResult,
-    teloxide::dispatching::DpHandlerDescription,
->;
-
-pub async fn dispatch(bot: MyBot, schema: MyHandler) {
-    Dispatcher::builder(bot, schema)
-        .dependencies(dptree::deps![])
-        .default_handler(|upd| async move {
-            tracing::warn!("unhandled update: {upd:?}");
-        })
-        .error_handler(LoggingErrorHandler::with_custom_text(
-            "an error has occured in the dispatcher",
-        ))
-        .build()
-        .dispatch()
-        .await;
-}
+pub type BoxError = Box<dyn Error + Send + Sync + 'static>;
 
 #[cfg(test)]
 mod tests {

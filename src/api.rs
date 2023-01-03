@@ -1,92 +1,19 @@
 use std::fmt::Display;
 
-use juniper::{
-    graphql_object, EmptySubscription, FieldResult, GraphQLEnum, GraphQLInputObject, GraphQLObject,
-    ScalarValue,
-};
+use juniper::{graphql_object, EmptySubscription, FieldResult, GraphQLInputObject, ScalarValue};
 use uuid::Uuid;
 use warp::{http::Response, Filter};
 
 use crate::{
     models::{self, User},
-    storage::{self, Service},
+    storage::Database,
 };
 
-// #[derive(GraphQLEnum)]
-// enum Episode {
-//     NewHope,
-//     Empire,
-//     Jedi,
-// }
-
-// #[derive(GraphQLObject)]
-// #[graphql(description = "A humanoid creature in the Star Wars universe")]
-// struct User {
-//     id: String,
-//     telegram_id: String,
-//     name: Option<String>,
-//     // friends: Vec<User>,
-// }
-
-// #[graphql_object(description = "Bereal application user")]
-// impl User {
-//     // fn id(&self)->
-//     fn friends(&self, context: &Context) -> Vec<User> {
-//         let db = &context.storage;
-//         let friends = db.friends_for_user(&self).unwrap();
-//         friends
-//     }
-// }
-
-// impl User {
-//     // normal impl block
-// }
-
-// struct Users(Vec<User>);
-
-// TODO: For now, next try merge models
-// impl From<models::User> for User {
-//     fn from(from: models::User) -> Self {
-//         Self {
-//             id: from.id.to_string(),
-//             telegram_id: from.telegram_id,
-//             name: from.name,
-//         }
-//     }
-// }
-// impl From<(models::User, Vec<models::User>)> for User {
-//     fn from((u, f): (models::User, Vec<models::User>)) -> Self {
-//         // let f: Users = f.into();
-//         let friends = f.into_iter().map(Into::into).collect();
-//         Self {
-//             id: u.id.to_string(),
-//             telegram_id: u.telegram_id,
-//             name: u.name,
-//             // friends: f.0,
-//             friends,
-//         }
-//     }
-// }
-
-// impl From<Vec<models::User>> for Users {
-//     fn from(from: Vec<models::User>) -> Self {
-//         Self(
-//             from.into_iter()
-//                 .map(|u| (u, vec![]))
-//                 .map(Into::into)
-//                 .collect(),
-//         )
-//     }
-// }
-
-// There is also a custom derive for mapping GraphQL input objects.
 #[derive(GraphQLInputObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct NewUser {
     name: String,
-    telegram_id: String,
-    // appears_in: Vec<Episode>,
-    // home_planet: String,
+    chat_id: String,
 }
 
 #[derive(GraphQLInputObject)]
@@ -96,16 +23,15 @@ struct AddFriend {
 }
 
 pub struct Context {
-    // Use your real database pool here.
-    storage: Service,
+    storage: Database,
 }
 
 impl Context {
-    fn new(storage: Service) -> Self {
+    fn new(storage: Database) -> Self {
         Self { storage }
     }
 
-    pub fn storage(&self) -> &Service {
+    pub fn storage(&self) -> &Database {
         &self.storage
     }
 }
@@ -143,33 +69,10 @@ impl Query {
     fn users(context: &Context) -> FieldResult<Vec<User>> {
         let db = &context.storage;
         let users = db.users()?;
-        // let users = db.with_friends(users)?;
-        // let graph = users.into_iter().map(Into::into).collect();
-        // Ok(graph)
-        Ok(users.into_iter().map(Into::into).collect())
-
-        // let mut result = vec![];
-        // for (u, f) in users{
-        //     result.push(User{
-        //          id:u.id,
-        //         telegram_id:u.telegram_id,
-        //          name:u.name,
-
-        //     })
-        // }
-
-        // todo!()
-        // let friends =
-
-        // Ok(users)
-        // Execute a db query.
-        // Note the use of `?` to propagate errors.
-        // let human = connection.find_human(&id)?;
-        // Return the result.
+        Ok(users)
     }
 }
 
-// Now, we do the same for our Mutation type.
 struct Mutation;
 
 #[graphql_object(
@@ -185,9 +88,8 @@ impl Mutation {
         new_user: NewUser,
     ) -> FieldResult<User, S> {
         let db = &context.storage;
-        let NewUser { name, telegram_id } = new_user;
-        let user = db.create_user(models::NewUser::joined_now(&name, &telegram_id))?;
-        // Ok((user, vec![]).into())
+        let NewUser { name, chat_id } = new_user;
+        let user = db.create_user(models::NewUser::joined_now(&name, &chat_id))?;
         Ok(user)
     }
 
@@ -199,7 +101,6 @@ impl Mutation {
             friend_id: Uuid::parse_str(&friend_id)?,
         })?;
         let user = db.user_by_id(result.user_id)?;
-        // Ok((user, vec![]).into())
         Ok(user)
     }
 }
@@ -212,7 +113,9 @@ fn schema() -> Schema {
     Schema::new(Query, Mutation, EmptySubscription::new())
 }
 
-pub async fn run() {
+// Creates GrpahQL API layer
+// Takes database service
+pub async fn run(db: Database) {
     let log = warp::log("warp_server");
 
     let homepage = warp::path::end().map(|| {
@@ -225,7 +128,7 @@ pub async fn run() {
 
     tracing::info!("listening on 127.0.0.1:8080");
 
-    let state = warp::any().map(move || Context::new(storage::Service::from_env()));
+    let state = warp::any().map(move || Context::new(db.clone()));
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
 
     warp::serve(

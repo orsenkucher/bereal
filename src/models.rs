@@ -11,8 +11,8 @@ use crate::with_id::WithId;
 #[derive(Identifiable, Queryable, AsChangeset, Clone, Debug)]
 pub struct User {
     pub id: Uuid,
-    pub telegram_id: String,
-    pub name: Option<String>,
+    pub chat_id: String,
+    pub phone_number: Option<String>,
     pub joined_at: NaiveDateTime,
 }
 
@@ -22,12 +22,12 @@ impl User {
         &self.id
     }
 
-    fn telegram_id(&self) -> &str {
-        &self.telegram_id
+    fn chat_id(&self) -> &str {
+        &self.chat_id
     }
 
-    fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    fn phone_number(&self) -> Option<&str> {
+        self.phone_number.as_deref()
     }
 
     fn joined_at(&self) -> &NaiveDateTime {
@@ -36,29 +36,31 @@ impl User {
 
     fn friends(&self, context: &Context) -> FieldResult<Vec<User>> {
         let db = context.storage();
-        let friends = db.friends_for_user(&self)?;
+        let friends = db.friends_for_user(self)?;
         Ok(friends)
     }
 }
 
 impl User {
-    // normal block
+    pub fn is_registered(&self) -> bool {
+        self.phone_number.is_some()
+    }
 }
 
 #[derive(Insertable, Deserialize, Clone, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser<'a> {
-    pub telegram_id: &'a str,
-    pub name: &'a str,
+    pub chat_id: &'a str,
+    pub phone_number: &'a str,
     pub joined_at: NaiveDateTime,
 }
 
 impl<'a> NewUser<'a> {
-    pub fn joined_now(name: &'a str, telegram_id: &'a str) -> Self {
+    pub fn joined_now(phone_number: &'a str, chat_id: &'a str) -> Self {
         let now = chrono::Utc::now();
         Self {
-            telegram_id,
-            name,
+            chat_id,
+            phone_number,
             joined_at: now.naive_utc(),
         }
     }
@@ -74,7 +76,6 @@ impl WithId for NewUser<'_> {
 
 #[derive(Identifiable, Queryable, AsChangeset, Associations, Clone, Debug)]
 #[diesel(belongs_to(User))]
-// #[diesel(belongs_to(User, foreign_key = friend_id))]
 #[diesel(table_name = friends)]
 pub struct Friend {
     pub id: Uuid,

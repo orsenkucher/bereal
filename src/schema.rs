@@ -11,8 +11,8 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Uuid,
-        telegram_id -> Text,
-        name -> Nullable<Text>,
+        chat_id -> Text,
+        phone_number -> Nullable<Text>,
         joined_at -> Timestamp,
     }
 }

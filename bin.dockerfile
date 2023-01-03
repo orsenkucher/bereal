@@ -1,4 +1,4 @@
-FROM rust as rs
+FROM rust:1.66 as rs
 
 RUN apt-get update && apt-get install -y build-essential \
   curl \

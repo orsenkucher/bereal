@@ -1,5 +1,10 @@
-use bereal::{migrations, storage::establish_connection, util};
+use bereal::{
+    migrations,
+    storage::{establish_connection, Database},
+    util, BoxError,
+};
 use dotenvy::dotenv;
+use futures::join;
 
 #[tokio::main]
 async fn main() {
@@ -12,16 +17,29 @@ async fn run() {
     util::setup_tracing();
     tracing::info!("BeReal is starting");
 
-    let connection = &mut establish_connection();
-    migrations::run(connection).unwrap();
+    run_migrations().expect("failed to run database migrations");
 
-    bereal::api::run().await;
+    let db = Database::from_env();
+    let api_fut = start_api_server(db.clone());
+    let tg_fut = start_telegram_server(db);
+    join!(api_fut, tg_fut);
+}
 
-    // Storage is repository wrapping diesel connection
-    // let storage = bereal::storage().await;
+fn run_migrations() -> Result<(), BoxError> {
+    let conn = &mut establish_connection();
+    tracing::info!("running database migrations");
+    migrations::run(conn)
+}
 
-    // let schema = bereal::bot::schema::root();
-    // let bot = bereal::bot::bot_from_env();
+async fn start_api_server(db: Database) {
+    tracing::info!("starting API server");
+    bereal::api::run(db).await;
+}
 
-    // bereal::dispatch(bot, schema).await;
+async fn start_telegram_server(db: Database) {
+    use bereal::bot;
+    tracing::info!("starting Telegram server");
+    let tg_schema = bot::schema::root();
+    let bot = bot::bot_from_env();
+    bot::dispatch(bot, tg_schema, db).await;
 }

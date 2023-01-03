@@ -8,6 +8,7 @@ use dotenvy::dotenv;
 use uuid::Uuid;
 
 use crate::models::{Friend, NewFriend};
+use crate::schema;
 use crate::{
     models::{NewUser, User},
     with_id::WithId,
@@ -17,11 +18,12 @@ pub type Connection = PgConnection;
 pub type Pool<C> = r2d2::Pool<ConnectionManager<C>>;
 type PooledConnection = r2d2::PooledConnection<ConnectionManager<Connection>>;
 
-pub struct Service {
+#[derive(Clone, Debug)]
+pub struct Database {
     pool: Pool<Connection>,
 }
 
-impl Service {
+impl Database {
     pub fn new<S: Into<String>>(db_url: S) -> Self {
         let manager = ConnectionManager::new(db_url);
         let pool = Pool::builder()
@@ -59,6 +61,10 @@ impl Service {
         get_user_by_id(id, self.conn()?.deref_mut())
     }
 
+    pub fn user_by_chat_id(&self, chat_id: &str) -> Result<User> {
+        get_user_by_chat_id(chat_id, self.conn()?.deref_mut())
+    }
+
     pub fn friends_for_user(&self, user: &User) -> Result<Vec<User>> {
         get_friends_for_user(user, self.conn()?.deref_mut())
     }
@@ -88,8 +94,8 @@ pub fn establish_connection() -> Connection {
 }
 
 fn reset_db(conn: &mut Connection) {
-    use crate::schema::friends::dsl::*;
-    use crate::schema::users::dsl::*;
+    use schema::friends::dsl::*;
+    use schema::users::dsl::*;
     diesel::delete(users)
         .execute(conn)
         .expect("could not delete users");
@@ -99,7 +105,7 @@ fn reset_db(conn: &mut Connection) {
 }
 
 fn create_user(new_user: NewUser, conn: &mut Connection) -> Result<User> {
-    use crate::schema::users::dsl::*;
+    use schema::users::dsl::*;
     diesel::insert_into(users)
         .values(new_user.with_id())
         .get_result(conn)
@@ -107,7 +113,7 @@ fn create_user(new_user: NewUser, conn: &mut Connection) -> Result<User> {
 }
 
 fn create_friend(new_friend: NewFriend, conn: &mut Connection) -> Result<Friend> {
-    use crate::schema::friends::dsl::*;
+    use schema::friends::dsl::*;
     diesel::insert_into(friends)
         .values(new_friend.with_id())
         .get_result(conn)
@@ -115,7 +121,7 @@ fn create_friend(new_friend: NewFriend, conn: &mut Connection) -> Result<Friend>
 }
 
 fn get_friends_for_user(user: &User, conn: &mut Connection) -> Result<Vec<User>> {
-    use crate::schema::{friends, users};
+    use schema::{friends, users};
     let friend_ids = Friend::belonging_to(user).select(friends::friend_id);
     users::table
         .filter(users::id.eq_any(friend_ids))
@@ -124,22 +130,30 @@ fn get_friends_for_user(user: &User, conn: &mut Connection) -> Result<Vec<User>>
 }
 
 fn get_user_by_id(uid: Uuid, conn: &mut Connection) -> Result<User> {
-    use crate::schema::users::dsl::*;
+    use schema::users::dsl::*;
     users
         .find(uid)
         .first(conn)
         .with_context(|| format!("failed to get user by id: {id:?}"))
 }
 
+fn get_user_by_chat_id(tg_id: &str, conn: &mut Connection) -> Result<User> {
+    use schema::users::dsl::*;
+    users
+        .filter(chat_id.eq(tg_id))
+        .first(conn)
+        .with_context(|| format!("unable to find user by telegram chat id: {tg_id}"))
+}
+
 fn get_users(conn: &mut Connection) -> Result<Vec<User>> {
-    use crate::schema::users::dsl::*;
+    use schema::users::dsl::*;
     users
         .load(conn)
         .with_context(|| "failed to get users".to_owned())
 }
 
 fn get_users_by_ids(ids: &[Uuid], conn: &mut Connection) -> Result<Vec<User>> {
-    use crate::schema::users::dsl::*;
+    use schema::users::dsl::*;
     users
         .filter(id.eq_any(ids))
         .load(conn)
