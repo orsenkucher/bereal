@@ -1,7 +1,4 @@
-use teloxide::{
-    prelude::*,
-    types::{Chat, Me},
-};
+use teloxide::{prelude::*, types::Chat};
 
 use crate::{models::NewUser, storage::Database};
 
@@ -44,8 +41,4 @@ fn greet(chat: &Chat) -> String {
         .map(|name| format!(", {}", name))
         .unwrap_or_default();
     format!("Hi{}👋", name)
-}
-
-pub async fn command(bot: Bot, msg: Message, me: Me) -> HandlerResult {
-    Ok(())
 }

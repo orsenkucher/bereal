@@ -1,36 +1,43 @@
-use teloxide::prelude::*;
+use teloxide::{dispatching::HandlerExt, prelude::*};
 
 use crate::bot::Schema;
 
-use super::{callback, command::Command, message};
+use super::{
+    callback,
+    command::{self, Command},
+    message,
+};
 
 pub fn root() -> Schema {
-    let callbacks = callback_handler();
-    let commands = command_handler();
-    let messages = text_handler();
+    let callback = callback_handler();
+    let command = command_handler();
+    let message = message_handler();
     let contact = contact_handler();
-    dptree::entry().branch(callbacks).branch(
-        Update::filter_message()
-            .branch(commands)
-            .branch(messages)
-            .branch(contact),
-    )
+
+    dptree::entry()
+        .branch(callback)
+        .branch(command)
+        .branch(message)
+        .branch(contact)
 }
 
 fn callback_handler() -> Schema {
     Update::filter_callback_query().endpoint(callback::callback)
 }
 
-fn text_handler() -> Schema {
-    Message::filter_text().endpoint(message::text)
+fn message_handler() -> Schema {
+    Update::filter_message().chain(Message::filter_text().endpoint(message::text))
 }
 
 fn command_handler() -> Schema {
-    dptree::entry()
+    use dptree::case;
+
+    Update::filter_message()
         .filter_command::<Command>()
-        .endpoint(message::command)
+        .branch(case![Command::Help].endpoint(command::help))
+        .branch(case![Command::AddFriends].endpoint(command::add_friends))
 }
 
 fn contact_handler() -> Schema {
-    Message::filter_contact().endpoint(message::contact)
+    Update::filter_message().chain(Message::filter_contact().endpoint(message::contact))
 }
