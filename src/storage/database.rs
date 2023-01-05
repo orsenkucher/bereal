@@ -8,15 +8,16 @@ use dotenvy::dotenv;
 use uuid::Uuid;
 
 use crate::models::{Friend, NewFriend};
-use crate::schema;
 use crate::{
     models::{NewUser, User},
     with_id::WithId,
 };
 
+use super::schema;
+
 pub type Connection = PgConnection;
 pub type Pool<C> = r2d2::Pool<ConnectionManager<C>>;
-type PooledConnection = r2d2::PooledConnection<ConnectionManager<Connection>>;
+pub type PooledConnection = r2d2::PooledConnection<ConnectionManager<Connection>>;
 
 #[derive(Clone, Debug)]
 pub struct Database {

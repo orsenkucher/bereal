@@ -5,7 +5,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::api::Context;
-use crate::schema::*;
+use crate::storage::schema::*;
 use crate::with_id::WithId;
 
 #[derive(Identifiable, Queryable, AsChangeset, Clone, Debug)]

@@ -4,7 +4,6 @@ pub mod api;
 pub mod bot;
 pub mod migrations;
 pub mod models;
-pub mod schema;
 pub mod storage;
 pub mod util;
 mod with_id;
