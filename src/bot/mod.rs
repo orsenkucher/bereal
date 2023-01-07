@@ -1,14 +1,14 @@
 use teloxide::prelude::*;
 use teloxide::{adaptors::DefaultParseMode, types::ParseMode};
 
-use crate::storage::Database;
 use crate::BoxError;
+use crate::Database;
 
 mod callback;
 mod command;
+mod handler;
 mod keyboard;
 mod message;
-pub mod schema;
 
 pub type Bot = DefaultParseMode<teloxide::Bot>;
 
@@ -23,6 +23,14 @@ type Schema = dptree::Handler<
 
 pub fn bot_from_env() -> Bot {
     teloxide::Bot::from_env().parse_mode(ParseMode::Html)
+}
+
+pub fn schema() -> Schema {
+    dptree::entry()
+        .branch(handler::callback())
+        .branch(handler::command())
+        .branch(handler::message())
+        .branch(handler::contact())
 }
 
 pub async fn dispatch(bot: Bot, schema: Schema, db: Database) {

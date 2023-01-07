@@ -1,6 +1,7 @@
 use teloxide::{prelude::*, types::Chat};
 
-use crate::{models::NewUser, storage::Database};
+use crate::models::NewUser;
+use crate::Database;
 
 use super::{keyboard, Bot, HandlerResult};
 

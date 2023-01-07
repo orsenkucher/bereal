@@ -1,11 +1,9 @@
 use warp::{Filter, Rejection, Reply};
 
-use crate::{
-    models::{ListOptions, User},
-    storage::Database,
-};
+use crate::models::{ListOptions, User};
+use crate::Database;
 
-use super::handlers;
+use super::handler;
 
 /// All user filters combined.
 pub fn users(db: Database) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
@@ -18,7 +16,7 @@ pub fn users_list(db: Database) -> impl Filter<Extract = impl Reply, Error = Rej
         .and(warp::get())
         .and(warp::query::<ListOptions>())
         .and(with_db(db))
-        .and_then(handlers::list_users)
+        .and_then(handler::list_users)
 }
 
 /// POST /users with JSON body
@@ -27,7 +25,7 @@ pub fn users_create(db: Database) -> impl Filter<Extract = impl Reply, Error = R
         .and(warp::post())
         .and(json_body())
         .and(with_db(db))
-        .and_then(handlers::create_user)
+        .and_then(handler::create_user)
 }
 
 fn with_db(

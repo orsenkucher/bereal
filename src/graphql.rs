@@ -3,10 +3,8 @@ use std::fmt::Display;
 use juniper::{graphql_object, EmptySubscription, FieldResult, GraphQLInputObject, ScalarValue};
 use uuid::Uuid;
 
-use crate::{
-    models::{self, User},
-    storage::Database,
-};
+use crate::models::{self, User};
+use crate::Database;
 
 #[derive(GraphQLInputObject)]
 #[graphql(description = "User creation input object.")]
