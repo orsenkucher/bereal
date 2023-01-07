@@ -2,10 +2,8 @@ use std::convert::Infallible;
 
 use warp::{hyper::StatusCode, reply::Response, Reply};
 
-use crate::{
-    models::{ListOptions, User},
-    storage::Database,
-};
+use crate::models::{ListOptions, User};
+use crate::Database;
 
 macro_rules! warp_try {
     ($expr:expr) => {
