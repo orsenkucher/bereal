@@ -6,7 +6,6 @@ pub mod migrations;
 pub mod models;
 pub mod storage;
 pub mod util;
-mod with_id;
 
 pub type BoxError = Box<dyn Error + Send + Sync + 'static>;
 

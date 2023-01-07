@@ -4,9 +4,9 @@ use juniper::{graphql_object, FieldResult};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::api::Context;
+use crate::api::graphql::Context;
 use crate::storage::schema::*;
-use crate::with_id::WithId;
+use crate::storage::with_id::WithId;
 
 #[derive(Identifiable, Queryable, AsChangeset, Serialize, Deserialize, Clone, Debug)]
 pub struct User {

@@ -18,14 +18,14 @@ macro_rules! warp_try {
     };
 }
 
-enum MyServerError {
+enum ReplyError {
     DatabaseInvalidConnection(anyhow::Error),
 }
 
-impl Reply for MyServerError {
+impl Reply for ReplyError {
     fn into_response(self) -> Response {
         match self {
-            MyServerError::DatabaseInvalidConnection(err) => {
+            ReplyError::DatabaseInvalidConnection(err) => {
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         }
@@ -33,7 +33,7 @@ impl Reply for MyServerError {
 }
 
 pub async fn list_users(opts: ListOptions, db: Database) -> Result<impl Reply, Infallible> {
-    let users = db.users().map_err(MyServerError::DatabaseInvalidConnection);
+    let users = db.users().map_err(ReplyError::DatabaseInvalidConnection);
     let users = warp_try!(users);
     let users = users
         .into_iter()

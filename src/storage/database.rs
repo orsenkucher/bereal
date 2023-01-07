@@ -7,13 +7,10 @@ use diesel::r2d2::{self, ConnectionManager};
 use dotenvy::dotenv;
 use uuid::Uuid;
 
-use crate::models::{Friend, NewFriend};
-use crate::{
-    models::{NewUser, User},
-    with_id::WithId,
-};
+use crate::models::{Friend, NewFriend, NewUser, User};
 
 use super::schema;
+use super::with_id::WithId;
 
 pub type Connection = PgConnection;
 pub type Pool<C> = r2d2::Pool<ConnectionManager<C>>;
