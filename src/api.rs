@@ -9,6 +9,9 @@ use crate::{
     storage::Database,
 };
 
+mod filters;
+mod handlers;
+
 #[derive(GraphQLInputObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct NewUser {
@@ -116,8 +119,6 @@ fn schema() -> Schema {
 // Creates GrpahQL API layer
 // Takes database service
 pub async fn run(db: Database) {
-    let log = warp::log("warp_server");
-
     let homepage = warp::path::end().map(|| {
         Response::builder()
             .header("content-type", "text/html")
@@ -131,14 +132,12 @@ pub async fn run(db: Database) {
     let state = warp::any().map(move || Context::new(db.clone()));
     let graphql_filter = juniper_warp::make_graphql_filter(schema(), state.boxed());
 
-    warp::serve(
-        warp::get()
-            .and(warp::path("graphiql"))
-            .and(juniper_warp::graphiql_filter("/graphql", None))
-            .or(homepage)
-            .or(warp::path("graphql").and(graphql_filter))
-            .with(log),
-    )
-    .run(([127, 0, 0, 1], 8080))
-    .await
+    let routes = warp::get()
+        .and(warp::path("graphiql"))
+        .and(juniper_warp::graphiql_filter("/graphql", None))
+        .or(homepage)
+        .or(warp::path("graphql").and(graphql_filter))
+        .with(warp::trace::request());
+
+    warp::serve(routes).run(([127, 0, 0, 1], 8080)).await
 }

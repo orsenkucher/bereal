@@ -1,14 +1,14 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use juniper::{graphql_object, FieldResult};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::api::Context;
 use crate::storage::schema::*;
 use crate::with_id::WithId;
 
-#[derive(Identifiable, Queryable, AsChangeset, Clone, Debug)]
+#[derive(Identifiable, Queryable, AsChangeset, Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     pub id: Uuid,
     pub chat_id: String,
@@ -105,4 +105,10 @@ impl WithId for NewFriend {
     fn id() -> Self::Id {
         friends::id
     }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ListOptions {
+    pub offset: Option<usize>,
+    pub limit: Option<usize>,
 }
