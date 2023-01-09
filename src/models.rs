@@ -106,9 +106,3 @@ impl WithId for NewFriend {
         friends::id
     }
 }
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct ListOptions {
-    pub offset: Option<usize>,
-    pub limit: Option<usize>,
-}

@@ -70,6 +70,10 @@ impl Database {
         get_users(self.conn()?.deref_mut())
     }
 
+    pub fn users_range(&self, offset: Option<usize>, limit: Option<usize>) -> Result<Vec<User>> {
+        get_users_range(self.conn()?.deref_mut(), offset, limit)
+    }
+
     pub fn with_friends(&self, users: Vec<User>) -> Result<Vec<(User, Vec<User>)>> {
         get_friends_for_users(users, self.conn()?.deref_mut())
     }
@@ -147,6 +151,24 @@ fn get_users(conn: &mut Connection) -> Result<Vec<User>> {
     users
         .load(conn)
         .with_context(|| "failed to get users".to_owned())
+}
+
+fn get_users_range(
+    conn: &mut Connection,
+    offset: Option<usize>,
+    limit: Option<usize>,
+) -> Result<Vec<User>> {
+    use schema::users::dsl::*;
+    let mut query = users.into_boxed();
+    if let Some(offset) = offset {
+        query = query.offset(offset as i64);
+    }
+    if let Some(limit) = limit {
+        query = query.limit(limit as i64);
+    }
+    query
+        .load(conn)
+        .with_context(|| format!("failed to get users, offset: {offset:?}, limit: {limit:?}"))
 }
 
 fn get_users_by_ids(ids: &[Uuid], conn: &mut Connection) -> Result<Vec<User>> {

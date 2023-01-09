@@ -1,47 +1,36 @@
 use std::convert::Infallible;
 
-use warp::{hyper::StatusCode, reply::Response, Reply};
+use anyhow::Result;
+use warp::{reply, Reply};
 
-use crate::models::{ListOptions, User};
+use crate::models::User;
 use crate::Database;
 
-macro_rules! warp_try {
-    ($expr:expr) => {
-        match $expr {
-            Ok(val) => val,
-            Err(err) => {
-                return Ok(err.into_response());
-            }
-        }
-    };
-}
-
-enum ReplyError {
-    DatabaseInvalidConnection(anyhow::Error),
-}
-
-impl Reply for ReplyError {
-    fn into_response(self) -> Response {
-        match self {
-            ReplyError::DatabaseInvalidConnection(err) => {
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        }
-    }
-}
+use super::models::{ListOptions, NewUser};
+use super::{warp_try, ReplyError};
 
 pub async fn list_users(opts: ListOptions, db: Database) -> Result<impl Reply, Infallible> {
-    let users = db.users().map_err(ReplyError::DatabaseInvalidConnection);
-    let users = warp_try!(users);
+    let users = list_users_inner(opts, db).await;
     let users = users
-        .into_iter()
-        .skip(opts.offset.unwrap_or(0))
-        .take(opts.limit.unwrap_or(usize::MAX))
-        .collect::<Vec<_>>();
-
-    Ok(warp::reply::json(&users).into_response())
+        .map(|users| reply::json(&users))
+        .map_err(ReplyError::DatabaseError);
+    warp_try!(users)
 }
 
-pub async fn create_user(user: User, db: Database) -> Result<impl Reply, Infallible> {
-    Ok(warp::reply().into_response())
+async fn list_users_inner(opts: ListOptions, db: Database) -> Result<Vec<User>> {
+    let users = db.users_range(opts.offset, opts.limit)?;
+    Ok(users)
+}
+
+pub async fn create_user(new_user: NewUser, db: Database) -> Result<impl Reply, Infallible> {
+    let user = create_user_inner(&new_user, db).await;
+    let user = user
+        .map(|user| reply::json(&user))
+        .map_err(ReplyError::DatabaseError);
+    warp_try!(user)
+}
+
+async fn create_user_inner(new_user: &NewUser, db: Database) -> Result<User> {
+    let user = db.create_user(new_user.into())?;
+    Ok(user)
 }

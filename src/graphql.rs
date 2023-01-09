@@ -9,8 +9,8 @@ use crate::Database;
 #[derive(GraphQLInputObject)]
 #[graphql(description = "User creation input object.")]
 struct NewUser {
-    name: String,
     chat_id: String,
+    phone_number: String,
 }
 
 #[derive(GraphQLInputObject)]
@@ -85,8 +85,11 @@ impl Mutation {
         new_user: NewUser,
     ) -> FieldResult<User, S> {
         let db = &context.storage;
-        let NewUser { name, chat_id } = new_user;
-        let user = db.create_user(models::NewUser::joined_now(&name, &chat_id))?;
+        let NewUser {
+            phone_number,
+            chat_id,
+        } = new_user;
+        let user = db.create_user(models::NewUser::joined_now(&phone_number, &chat_id))?;
         Ok(user)
     }
 
