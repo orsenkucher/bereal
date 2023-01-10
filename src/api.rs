@@ -67,7 +67,8 @@ pub async fn run(db: Database) {
         .and(juniper_warp::graphiql_filter("/graphql", None))
         .or(homepage())
         .or(warp::path("graphql").and(graphql_filter))
-        .or(filter::users(db))
+        .or(filter::users(db.clone()))
+        .or(filter::friends(db.clone()))
         .with(warp::trace::request());
 
     warp::serve(routes).run(([127, 0, 0, 1], 8080)).await

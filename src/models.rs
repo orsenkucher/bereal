@@ -1,3 +1,4 @@
+use anyhow::Result;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use juniper::{graphql_object, FieldResult};
@@ -74,7 +75,9 @@ impl WithId for NewUser<'_> {
     }
 }
 
-#[derive(Identifiable, Queryable, AsChangeset, Associations, Clone, Debug)]
+#[derive(
+    Identifiable, Queryable, AsChangeset, Associations, Serialize, Deserialize, Clone, Debug,
+)]
 #[diesel(belongs_to(User))]
 #[diesel(table_name = friends)]
 pub struct Friend {
@@ -91,6 +94,16 @@ pub struct NewFriend {
 }
 
 impl NewFriend {
+    pub fn new(user_id: Uuid, friend_id: Uuid) -> Self {
+        Self { user_id, friend_id }
+    }
+
+    pub fn from_str(user_id: &str, friend_id: &str) -> Result<Self> {
+        let user_id = Uuid::try_parse(user_id)?;
+        let friend_id = Uuid::try_parse(friend_id)?;
+        Ok(Self::new(user_id, friend_id))
+    }
+
     pub fn inverse(&self) -> Self {
         Self {
             user_id: self.friend_id,
