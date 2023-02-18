@@ -14,10 +14,8 @@ diesel::table! {
         chat_id -> Text,
         phone_number -> Nullable<Text>,
         joined_at -> Timestamp,
+        language -> Nullable<Text>,
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    friends,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(friends, users,);

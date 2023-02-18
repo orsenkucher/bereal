@@ -8,11 +8,11 @@ use super::models::ListOptions;
 
 /// All user filters combined.
 pub fn users(db: Database) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    users_list(db.clone()).or(users_create(db.clone()))
+    users_list(db.clone()).or(users_create(db))
 }
 
 pub fn friends(db: Database) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone {
-    friends_create(db.clone())
+    friends_create(db)
 }
 
 /// GET /users?offset=3&limit=5

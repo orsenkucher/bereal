@@ -22,9 +22,15 @@ pub async fn help(bot: Bot, msg: Message) -> HandlerResult {
     Ok(())
 }
 
+const ADD_FRIENDS_MESSAGE: &str = r#"
+To share your friends you have 3 options:
+  1. Find by name.
+  2. Find by phone number.
+  3. Share friend's contact as telegram attachment.
+"#;
+
 pub async fn add_friends(bot: Bot, msg: Message) -> HandlerResult {
     tracing::info!("add_friends command for {}", msg.chat.id);
-    bot.send_message(msg.chat.id, "Please, share your friends")
-        .await?;
+    bot.send_message(msg.chat.id, ADD_FRIENDS_MESSAGE).await?;
     Ok(())
 }

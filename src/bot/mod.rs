@@ -1,18 +1,25 @@
+use teloxide::dispatching::dialogue::{self, InMemStorage};
 use teloxide::prelude::*;
 use teloxide::{adaptors::DefaultParseMode, types::ParseMode};
 
-use crate::BoxError;
 use crate::Database;
 
+use self::state::State;
+
+mod action;
+mod automation;
 mod callback;
 mod command;
 mod handler;
 mod keyboard;
+mod language;
 mod message;
+mod state;
 
 pub type Bot = DefaultParseMode<teloxide::Bot>;
+pub type Dialogue = dialogue::Dialogue<State, InMemStorage<State>>;
 
-type HandlerResult = Result<(), BoxError>;
+type HandlerResult = anyhow::Result<()>;
 
 type Schema = dptree::Handler<
     'static,

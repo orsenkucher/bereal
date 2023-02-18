@@ -68,7 +68,7 @@ pub async fn run(db: Database) {
         .or(homepage())
         .or(warp::path("graphql").and(graphql_filter))
         .or(filter::users(db.clone()))
-        .or(filter::friends(db.clone()))
+        .or(filter::friends(db))
         .with(warp::trace::request());
 
     warp::serve(routes).run(([127, 0, 0, 1], 8080)).await

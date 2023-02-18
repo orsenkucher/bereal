@@ -1,9 +1,12 @@
+use std::str::FromStr;
+
+use anyhow::bail;
 use teloxide::{prelude::*, types::Chat};
 
 use crate::models::NewUser;
 use crate::Database;
 
-use super::{keyboard, Bot, HandlerResult};
+use super::{automation::Automation, keyboard, state::State, Bot, Dialogue, HandlerResult};
 
 pub async fn contact(bot: Bot, msg: Message, db: Database) -> HandlerResult {
     if let Some(contact) = msg.contact() {
@@ -19,20 +22,37 @@ pub async fn contact(bot: Bot, msg: Message, db: Database) -> HandlerResult {
     Ok(())
 }
 
-pub async fn text(bot: Bot, msg: Message, db: Database) -> HandlerResult {
+pub async fn start(
+    bot: Bot,
+    msg: Message,
+    db: Database,
+    state: State,
+    dialogue: Dialogue,
+) -> HandlerResult {
+    use super::state::{Language, Menu};
+
+    let State::Start = state else {
+        bail!("Bad state: {:?}", state);
+    };
+
     let greet = greet(&msg.chat);
     let user = db.user_by_chat_id(&msg.chat.id.to_string());
-    let is_reg = matches!(user, Ok(u) if u.is_registered());
-
-    if is_reg {
-        let greet = format!("{}\nYou are already registered!", greet);
-        bot.send_message(msg.chat.id, greet).await?;
+    let user = user.as_ref().map_or(None, |u| u.as_registered());
+    if let Some(user) = user {
+        let lang = FromStr::from_str(&user.language)?;
+        let mut auto = Automation::new((greet, user), Menu::new(lang));
+        auto.send_message(&bot, &msg.chat).await?;
+        dialogue.update(State::Menu(auto)).await?;
     } else {
-        let greet = format!("{}\nPlease share your contact with us", greet);
-        bot.send_message(msg.chat.id, greet)
-            .reply_markup(keyboard::contact())
-            .await?;
+        let mut auto = Automation::new((greet,), Language);
+        auto.send_message(&bot, &msg.chat).await?;
+        dialogue.update(State::Language(auto)).await?;
     }
+
+    Ok(())
+}
+
+pub async fn language(bot: Bot, msg: Message, db: Database) -> HandlerResult {
     Ok(())
 }
 
@@ -41,5 +61,5 @@ fn greet(chat: &Chat) -> String {
         .first_name()
         .map(|name| format!(", {}", name))
         .unwrap_or_default();
-    format!("Hi{}👋", name)
+    format!("Hi{}👋!", name)
 }

@@ -9,7 +9,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.21", features = ["rt-multi-thread", "macros"] }
 futures = "0.3.25"
-# juniper = "0.15.10"
+# juniper = { version = "0.15.11", features = ["uuid", "chrono"] }
 # juniper_warp = "0.7.0"
 juniper = { git = "https://github.com/graphql-rust/juniper", branch = "master", features = [
   "uuid",

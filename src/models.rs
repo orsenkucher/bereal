@@ -15,6 +15,15 @@ pub struct User {
     pub chat_id: String,
     pub phone_number: Option<String>,
     pub joined_at: NaiveDateTime,
+    pub language: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RegisteredUser {
+    pub id: Uuid,
+    pub chat_id: String,
+    pub phone_number: String,
+    pub language: String,
 }
 
 #[graphql_object(description = "Bereal application user")]
@@ -44,9 +53,36 @@ impl User {
 
 impl User {
     pub fn is_registered(&self) -> bool {
-        self.phone_number.is_some()
+        self.language.is_some() && self.phone_number.is_some()
+    }
+
+    pub fn as_registered(&self) -> Option<RegisteredUser> {
+        RegisteredUser::try_from(self.clone())
     }
 }
+
+// TODO: convert to Errors and TryFrom trait.
+impl RegisteredUser {
+    fn try_from(user: User) -> Option<Self> {
+        if !user.is_registered() {
+            return None;
+        }
+        Some(Self {
+            id: user.id,
+            chat_id: user.chat_id,
+            phone_number: user.phone_number.unwrap(),
+            language: user.language.unwrap(),
+        })
+    }
+}
+
+// impl TryFrom<User> for RegisteredUser{
+//     type Error;
+
+//     fn try_from(value: User) -> std::result::Result<Self, Self::Error> {
+//         todo!()
+//     }
+// }
 
 #[derive(Insertable, Deserialize, Clone, Debug)]
 #[diesel(table_name = users)]
